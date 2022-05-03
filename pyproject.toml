@@ -1,24 +1,21 @@
 [tool.poetry]
-name = "YOUR_MODULE_NAME"
+name = "unmanaged-puid-identifier"
 version = "0.1.0"
 description = ""
-authors = ["YOUR NAME <YOUR@EMAIL>"]
+authors = ["Aarhus Stadsarkiv <stadsarkiv@aarhus.dk>"]
 maintainers = ["Aarhus Stadsarkiv <stadsarkiv@aarhus.dk>"]
 license = "GPL-3.0"
 readme = "README.md"
 homepage = "https://www.aarhusstadsarkiv.dk/"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 httpx = "^0.22.0"
 
-[tool.poetry.dev-dependencies]
-pytest = "^6.2"
-pytest-cov = "^2.11"
-black = "^20.8b1"
-flake8 = "^3.9.1"
-mypy = "^0.812"
 
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+flake8 = "^4.0.1"
 [tool.black]
 line-length = 79
 

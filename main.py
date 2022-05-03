@@ -3,7 +3,6 @@ import sqlite3
 import httpx
 
 from sqlite3.dbapi2 import Connection
-from typing import Dict
 
 
 def missingpuididentifier(file: str) -> None:
@@ -14,7 +13,7 @@ def missingpuididentifier(file: str) -> None:
       currently found within our convertool .json files
     """
     # read in our .json files as dicts.
-    # have to pull them from our convertool github to make sure they're up to date
+    # pull them from our convertool github to make sure they're up to date
     response_convert = httpx.get(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/"
         "convertool/master/data/to_convert2.json"
@@ -24,13 +23,16 @@ def missingpuididentifier(file: str) -> None:
         "convertool/master/data/to_ignore.json"
     )
 
-    convert_dict: Dict = response_convert.json()
-    ignore_dict: Dict = response_ignore.json()
+    convert_dict: dict = response_convert.json()
+    ignore_dict: dict = response_ignore.json()
     unidentified_files: int = 0
 
-    # make a query to our database to get all the puids from the signaturecount view
-    # then iterate thru the result, printing every puid currently missing from the .jsons
-    print(f"Fileformats in the supplied files.db that we are currently unable to handle:", flush=True)
+    # Query _Signaturecount-view from files.db
+    # Print every puid currently not in the .json-files
+    print(
+        "Currently unhandled fileformats in the supplied files.db:",
+        flush=True,
+    )
     try:
         con: Connection = sqlite3.connect(
             "file:" + file + "?mode=ro", uri=True
@@ -39,12 +41,18 @@ def missingpuididentifier(file: str) -> None:
             "SELECT puid, signature, count FROM _SignatureCount"
         ):
             if puid is None:
-                unidentified_files += 1 
+                unidentified_files += 1
             elif puid not in convert_dict and puid not in ignore_dict:
-                print(f"PUID: {puid}\tCount: {count}\t ({signature})", flush=True)
+                print(
+                    f"PUID: {puid}\tCount: {count}\t ({signature})",
+                    flush=True,
+                )
 
         if unidentified_files:
-            print(f"There was also {unidentified_files} unidentified file(s)", flush=True)
+            print(
+                f"There was also {unidentified_files} unidentified file(s)",
+                flush=True,
+            )
 
     except sqlite3.DatabaseError:
         print(
