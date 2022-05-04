@@ -41,7 +41,7 @@ def missingpuididentifier(file: str) -> None:
             "SELECT puid, signature, count FROM _SignatureCount"
         ):
             if puid is None:
-                unidentified_files += 1
+                unidentified_files = count
             elif puid not in convert_dict and puid not in ignore_dict:
                 print(
                     f"PUID: {puid}\tCount: {count}\t ({signature})",
