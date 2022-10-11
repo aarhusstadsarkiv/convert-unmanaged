@@ -15,12 +15,10 @@ def missingpuididentifier(file: str) -> None:
     # read in our .json files as dicts.
     # pull them from our convertool github to make sure they're up to date
     response_convert = httpx.get(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/"
-        "convertool/master/data/to_convert2.json"
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/referncefiles/main/to_convert.json"
     )
     response_ignore = httpx.get(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/"
-        "convertool/master/data/to_ignore.json"
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/referncefiles/main/to_ignore.json"
     )
 
     convert_dict: dict = response_convert.json()
@@ -72,7 +70,6 @@ def main():
     )
     args: argparse.Namespace = parser.parse_args()
     missingpuididentifier(args.file)
-
 
 
 if __name__ == "__main__":
