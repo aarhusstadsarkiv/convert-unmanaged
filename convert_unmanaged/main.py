@@ -15,10 +15,10 @@ def missingpuididentifier(file: str) -> None:
     # read in our .json files as dicts.
     # pull them from our convertool github to make sure they're up to date
     response_convert = httpx.get(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/referncefiles/main/to_convert.json"
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"
     )
     response_ignore = httpx.get(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/referncefiles/main/to_ignore.json"
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_ignore.json"
     )
 
     convert_dict: dict = response_convert.json()
@@ -42,7 +42,7 @@ def missingpuididentifier(file: str) -> None:
                 unidentified_files = count
             elif puid not in convert_dict and puid not in ignore_dict:
                 print(
-                    f"PUID: {puid}\tCount: {count}\t ({signature})",
+                    f"PUID: {puid}\tCount: {count}\t {signature}",
                     flush=True,
                 )
 
