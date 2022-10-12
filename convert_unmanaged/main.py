@@ -28,13 +28,13 @@ def missingpuididentifier(file: str) -> None:
     )
 
     convert_dict: dict = response_convert.json()
-    print(f"length of convert before unarchiver: {len(convert_dict)}")
+    # print(f"length of convert before unarchiver: {len(convert_dict)}")
     convert_unarchiver_dict: dict = response_convert_unarchiver.json()
     convert_dict.update(convert_unarchiver_dict)
-    print(f"length of convert after unarchiver: {len(convert_dict)}")
+    # print(f"length of convert after unarchiver: {len(convert_dict)}")
     convert_symphovert_dict: dict = response_convert_symphovert.json()
     convert_dict.update(convert_symphovert_dict)
-    print(f"length of convert after symphovert: {len(convert_dict)}")
+    # print(f"length of convert after symphovert: {len(convert_dict)}")
 
     ignore_dict: dict = response_ignore.json()
     unidentified_files: int = 0
