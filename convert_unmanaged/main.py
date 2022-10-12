@@ -31,8 +31,8 @@ def missingpuididentifier(file: str) -> None:
     )
 
     convert_dict: dict = response_convert.json()
-    convert_dict.update(response_convert_unarchiver)
-    convert_dict.update(response_convert_symphovert)
+    convert_dict.update(response_convert_unarchiver.json())
+    convert_dict.update(response_convert_symphovert.json())
     ignore_dict: dict = response_ignore.json()
     unidentified_files: int = 0
 
