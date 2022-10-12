@@ -17,11 +17,22 @@ def missingpuididentifier(file: str) -> None:
     response_convert = httpx.get(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"
     )
+    response_convert_unarchiver = httpx.get(
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert_unarchiver.json"
+    )
+    response_convert_symphovert = httpx.get(
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert_symphovert.json"
+    )
+    response_convert = httpx.get(
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"
+    )
     response_ignore = httpx.get(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_ignore.json"
     )
 
     convert_dict: dict = response_convert.json()
+    convert_dict.update(response_convert_unarchiver)
+    convert_dict.update(response_convert_symphovert)
     ignore_dict: dict = response_ignore.json()
     unidentified_files: int = 0
 
