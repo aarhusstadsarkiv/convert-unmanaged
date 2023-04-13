@@ -1,9 +1,8 @@
 [tool.poetry]
 name = "convert-unmanaged"
-version = "0.1.7"
-description = ""
+version = "0.1.8"
+description = "Prints status for unhandled fileformats"
 authors = ["Aarhus Stadsarkiv <stadsarkiv@aarhus.dk>"]
-maintainers = ["Aarhus Stadsarkiv <stadsarkiv@aarhus.dk>"]
 license = "GPL-3.0"
 readme = "README.md"
 homepage = "https://www.aarhusstadsarkiv.dk/"
@@ -14,6 +13,11 @@ httpx = ">=0.22.0"
 
 [tool.poetry.scripts]
 convert-unmanaged = "convert_unmanaged.main:main"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+flake8 = "^6.0.0"
+mypy = "^1.2.0"
 
 [tool.black]
 line-length = 79
