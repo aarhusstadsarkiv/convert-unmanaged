@@ -19,7 +19,7 @@ def missingpuididentifier(file: Path) -> None:
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"  # noqa
     )
     response_convert_unarchiver = httpx.get(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert_unarchiver.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_extract.json"  # noqa
     )
     response_convert_symphovert = httpx.get(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert_symphovert.json"  # noqa
