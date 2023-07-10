@@ -68,9 +68,9 @@ def missingpuididentifier(file: Path) -> None:
         for puid, sig, count in con.execute(query):
             if puid in manual_conversion_dict:
                 manual_conversion_files.append(
-                f"Puid: {str(puid).ljust(16)} Count: {str(count).ljust(10)}"
-                f"Type: {sig}"
-                )                
+                    f"Puid: {str(puid).ljust(16)} Count: {str(count).ljust(10)}"
+                    f"Type: {sig}"
+                )
             if puid in handled_formats or puid in ignored_formats:
                 continue
             if puid is None:
@@ -93,9 +93,11 @@ def missingpuididentifier(file: Path) -> None:
             print(f"There was {unidentified_files} unidentified files")
         else:
             print("No unidentified files")
-            
+
         if manual_conversion_files:
-            print("The following file-formats are marked for manual conversion")
+            print(
+                "The following file-formats are marked for manual conversion"
+            )
             for f in manual_conversion_files:
                 print(f)
 
