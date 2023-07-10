@@ -33,6 +33,9 @@ def missingpuididentifier(file: Path) -> None:
     response_custom = httpx.get(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/custom_signatures.json"  # noqa
     )
+    response_manual_conversion = httpx.get(
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/manual_convert.json"
+    )
 
     # Accumulate fileformats that we can handle
     handled_formats: dict = response_convert.json()
@@ -44,6 +47,8 @@ def missingpuididentifier(file: Path) -> None:
     handled_formats.update(convert_reidentify_dict)
     custom_formats_dict: dict = response_custom.json()
     handled_formats.update({v["puid"]: v for v in custom_formats_dict})
+    manual_conversion_dict: dict = response_manual_conversion.json()
+    handled_formats.update(manual_conversion_dict)
 
     # Fileformats that we ignore
     ignored_formats: dict = response_ignore.json()
