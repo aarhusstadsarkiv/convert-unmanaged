@@ -1,0 +1,5 @@
+on: [pull_request]
+
+jobs:
+  call-linting-from-utils:
+    uses: aarhusstadsarkiv/acautils/.github/workflows/linting_ruff.yml@main
