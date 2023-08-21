@@ -3,17 +3,37 @@ import sqlite3
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from shutil import copy
 from sqlite3.dbapi2 import Connection
-from typing import Optional
+from typing import Optional, Callable, Union
 
 import httpx
 
 
-def missingpuididentifier(file: Path) -> None:
+def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
+    def inner(arg: Union[str, int]) -> int:
+        try:
+            f = int(arg)
+
+            if f < minimum or f > maximum:
+                raise argparse.ArgumentTypeError(
+                    f"Argument must be in the range [{minimum}; {maximum}]"
+                )
+
+            return f
+        except ValueError:
+            raise argparse.ArgumentTypeError("Must be an integer number")
+
+    return inner
+
+
+# noinspection SqlNoDataSourceInspection,SqlResolve
+def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None:
     """Print a list of every puid in the given files.db that isn't handled in our reference-files.
 
     Args:
         file (Path): Path to the files.db
+        examples (int): How many examples to extract unhandled files
     """
     response_convert = httpx.get(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"  # noqa
@@ -65,6 +85,8 @@ def missingpuididentifier(file: Path) -> None:
     # signature and count for all puids not handled in the .json-files
     try:
         con: Connection = sqlite3.connect(f"file:{file}?mode=ro", uri=True)
+        examples_dir = (examples_dir or (file.parent / "examples")).resolve()
+        examples_dir.mkdir(parents=True, exist_ok=True)
     except sqlite3.DatabaseError as e:
         sys.exit(f"Error when connection to database: {e}")
     else:
@@ -93,6 +115,22 @@ def missingpuididentifier(file: Path) -> None:
         if unhandled_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
             print("\n".join(f"{p:<16} | {c:<10} | {s}" for p, c, s in unhandled_files), end="\n\n")
+
+        if unhandled_files and examples > 0:
+            for puid, *_ in unhandled_files:
+                files: list[tuple[str, str]] = con.execute(
+                    "SELECT uuid, relative_path FROM Files WHERE puid = ? ORDER BY random() LIMIT ?",
+                    [puid, examples],
+                ).fetchall()
+
+                output_dir = examples_dir.joinpath(puid.replace("/", "_"))
+                output_dir.mkdir(parents=True, exist_ok=True)
+
+                for uuid, relative_path in files:
+                    copy(
+                        file.parent.parent / relative_path,
+                        output_dir / f"{uuid}{Path(relative_path).suffix}",
+                    )
 
         print(
             f"There {'were' if len(manual_conversion_files) != 1 else 'was'} {len(manual_conversion_files)} "
@@ -144,8 +182,22 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "to be compared with our current convertool json files",
         type=Path,
     )
+    parser.add_argument(
+        "--examples",
+        type=argtype_examples(0, 10),
+        required=False,
+        default=0,
+        help="Extract N examples of unhandled files",
+    )
+    parser.add_argument(
+        "--examples-dir",
+        type=Path,
+        required=False,
+        default=None,
+        help="Set output directory for example files",
+    )
     args: argparse.Namespace = parser.parse_args(argv)
-    missingpuididentifier(args.file)
+    missingpuididentifier(args.file.resolve(), args.examples, args.examples_dir)
 
     return 0
 
