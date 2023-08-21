@@ -35,6 +35,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     Args:
         file (Path): Path to the files.db
         examples (int): How many examples to extract unhandled files
+        examples_dir (Path): Output directory for examples
     """
     response_convert = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"  # noqa
