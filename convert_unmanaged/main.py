@@ -2,12 +2,13 @@ import argparse
 import sqlite3
 import sys
 from collections.abc import Sequence
+from json import loads
 from pathlib import Path
 from shutil import copy
 from sqlite3.dbapi2 import Connection
 from typing import Optional, Callable, Union
 
-import httpx
+from urllib.request import urlopen
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
@@ -35,43 +36,43 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         file (Path): Path to the files.db
         examples (int): How many examples to extract unhandled files
     """
-    response_convert = httpx.get(
+    response_convert = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"  # noqa
     )
-    response_convert_unarchiver = httpx.get(
+    response_convert_unarchiver = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_extract.json"  # noqa
     )
-    response_convert_symphovert = httpx.get(
+    response_convert_symphovert = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert_symphovert.json"  # noqa
     )
-    response_reidentify = httpx.get(
+    response_reidentify = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_reidentify.json"  # noqa
     )
-    response_ignore = httpx.get(
+    response_ignore = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_ignore.json"  # noqa
     )
-    response_custom = httpx.get(
+    response_custom = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/custom_signatures.json"  # noqa
     )
-    response_manual_conversion = httpx.get(
+    response_manual_conversion = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/manual_convert.json",
     )
 
     # Accumulate fileformats that we can handle
-    handled_formats: dict = response_convert.json()
-    convert_unarchiver_dict: dict = response_convert_unarchiver.json()
+    handled_formats: dict = loads(response_convert.read())
+    convert_unarchiver_dict: dict = loads(response_convert_unarchiver.read())
     handled_formats.update(convert_unarchiver_dict)
-    convert_symphovert_dict: dict = response_convert_symphovert.json()
+    convert_symphovert_dict: dict = loads(response_convert_symphovert.read())
     handled_formats.update(convert_symphovert_dict)
-    convert_reidentify_dict: dict = response_reidentify.json()
+    convert_reidentify_dict: dict = loads(response_reidentify.read())
     handled_formats.update(convert_reidentify_dict)
-    custom_formats_dict: dict = response_custom.json()
+    custom_formats_dict: dict = loads(response_custom.read())
     handled_formats.update({v["puid"]: v for v in custom_formats_dict})
-    manual_conversion_dict: dict = response_manual_conversion.json()
+    manual_conversion_dict: dict = loads(response_manual_conversion.read())
     handled_formats.update(manual_conversion_dict)
 
     # Fileformats that we ignore
-    ignored_formats: dict = response_ignore.json()
+    ignored_formats: dict = loads(response_ignore.read())
 
     handled_files: int = 0
     unidentified_files: int = 0
