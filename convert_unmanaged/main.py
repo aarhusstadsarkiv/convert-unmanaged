@@ -1,17 +1,14 @@
 import argparse
 import sys
-from collections.abc import Callable
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from json import loads
 from pathlib import Path
 from shutil import copy
 from sqlite3 import DatabaseError
-from typing import Optional
-from typing import Union
+from typing import Optional, Union
 from urllib.request import urlopen
 
-from acacore.database import Column
-from acacore.database import FileDB
+from acacore.database import Column, FileDB
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
@@ -134,7 +131,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
                         order_by=[("random()", "asc")],
                         limit=examples,
                         parameters=[puid],
-                    ).fetchalltuples()
+                    ).fetchalltuples(),
                 )
 
                 output_dir = examples_dir.joinpath(puid.replace("/", "_"))
