@@ -1,13 +1,12 @@
 import argparse
 import sqlite3
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from json import loads
 from pathlib import Path
 from shutil import copy
 from sqlite3.dbapi2 import Connection
-from typing import Optional, Callable, Union
-
+from typing import Optional, Union
 from urllib.request import urlopen
 
 
@@ -18,7 +17,7 @@ def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], 
 
             if f < minimum or f > maximum:
                 raise argparse.ArgumentTypeError(
-                    f"Argument must be in the range [{minimum}; {maximum}]"
+                    f"Argument must be in the range [{minimum}; {maximum}]",
                 )
 
             return f
@@ -112,7 +111,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         print(
             f"There {'were' if len(unhandled_files) != 1 else 'was'} {len(unhandled_files)} "
             + "unhandled file-formats"
-            + (":" if unhandled_files else ".")
+            + (":" if unhandled_files else "."),
         )
         if unhandled_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
@@ -137,7 +136,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         print(
             f"There {'were' if len(manual_conversion_files) != 1 else 'was'} {len(manual_conversion_files)} "
             + "file-formats marked for manual conversion"
-            + (":" if manual_conversion_files else ".")
+            + (":" if manual_conversion_files else "."),
         )
         if manual_conversion_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
@@ -148,8 +147,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
 
         print(
             f"There {'were' if len(convert_unarchiver_files) != 1 else 'was'} {len(convert_unarchiver_files)} "
-            + f"file-formats marked for extraction"
-            + (":" if convert_unarchiver_files else ".")
+            + "file-formats marked for extraction"
+            + (":" if convert_unarchiver_files else "."),
         )
         if convert_unarchiver_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
@@ -161,7 +160,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         print(
             f"There {'were' if len(convert_symphovert_files) != 1 else 'was'} {len(convert_symphovert_files)} "
             + "file-formats marked for conversion with Symphony"
-            + (":" if convert_symphovert_files else ".")
+            + (":" if convert_symphovert_files else "."),
         )
         if convert_symphovert_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
@@ -172,7 +171,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
 
         print(f"There {'were' if ignored_files != 1 else 'was'} {ignored_files} ignored files.")
         print(
-            f"There {'were' if unidentified_files != 1 else 'was'} {unidentified_files} unidentified files."
+            f"There {'were' if unidentified_files != 1 else 'was'} {unidentified_files} unidentified files.",
         )
 
 
