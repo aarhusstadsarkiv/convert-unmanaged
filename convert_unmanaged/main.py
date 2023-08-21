@@ -8,7 +8,7 @@ from sqlite3 import DatabaseError
 from typing import Optional, Union
 from urllib.request import urlopen
 
-from acacore.database import Column, FileDB
+from acacore.database import Column, FileDB  # type: ignore
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
