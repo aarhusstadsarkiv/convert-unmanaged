@@ -9,7 +9,6 @@ homepage = "https://www.aarhusstadsarkiv.dk/"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-httpx = ">=0.22.0"
 
 [tool.poetry.scripts]
 convert-unmanaged = "convert_unmanaged.main:main"
