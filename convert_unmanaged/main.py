@@ -53,9 +53,13 @@ def missingpuididentifier(file: Path) -> None:
     # Fileformats that we ignore
     ignored_formats: dict = response_ignore.json()
 
+    handled_files: int = 0
     unidentified_files: int = 0
-    unhandled_files: list[str] = []
-    manual_conversion_files: list[str] = []
+    ignored_files: int = 0
+    unhandled_files: list[tuple[str, int, str]] = []
+    manual_conversion_files: list[tuple[str, int, str]] = []
+    convert_unarchiver_files: list[tuple[str, int, str]] = []
+    convert_symphovert_files: list[tuple[str, int, str]] = []
 
     # Query _Signaturecount-view from files.db. Print puid,
     # signature and count for all puids not handled in the .json-files
@@ -64,39 +68,72 @@ def missingpuididentifier(file: Path) -> None:
     except sqlite3.DatabaseError as e:
         sys.exit(f"Error when connection to database: {e}")
     else:
-        query: str = "SELECT puid, signature, count FROM _SignatureCount"
+        query: str = "SELECT puid, signature, count FROM _SignatureCount ORDER BY count DESC"
         for puid, sig, count in con.execute(query):
-            if puid in manual_conversion_dict:
-                manual_conversion_files.append(
-                    f"Puid: {str(puid).ljust(16)} Count: {str(count).ljust(10)}" f"Type: {sig}",
-                )
-            if puid in handled_formats or puid in ignored_formats:
-                continue
             if puid is None:
-                unidentified_files = count
-                continue
+                unidentified_files += count
+            elif puid in handled_formats:
+                handled_files += count
+            elif puid in ignored_formats:
+                ignored_files += count
+            elif puid in manual_conversion_dict:
+                manual_conversion_files.append((puid, count, sig))
+            elif puid in convert_unarchiver_dict:
+                convert_unarchiver_files.append((puid, count, sig))
+            elif puid in convert_symphovert_dict:
+                convert_symphovert_files.append((puid, count, sig))
+            else:
+                unhandled_files.append((puid, count, sig))
 
-            unhandled_files.append(
-                f"Puid: {str(puid).ljust(16)} Count: {str(count).ljust(10)}" f"Type: {sig}",
-            )
-
+        print(
+            f"There {'were' if len(unhandled_files) != 1 else 'was'} {len(unhandled_files)} "
+            + "unhandled file-formats"
+            + (":" if unhandled_files else ".")
+        )
         if unhandled_files:
-            print("Currently unhandled fileformats in the supplied files.db:")
-            for s in unhandled_files:
-                print(s)
-        else:
-            print("No unhandled fileformats in the supplied files.db")
+            print(f"{'PUID':<16} | {'Count':<10} | Type")
+            print("\n".join(f"{p:<16} | {c:<10} | {s}" for p, c, s in unhandled_files), end="\n\n")
 
-        if unidentified_files:
-            print(f"There was {unidentified_files} unidentified files")
-        else:
-            print("No unidentified files")
+        print(
+            f"There {'were' if len(manual_conversion_files) != 1 else 'was'} {len(manual_conversion_files)} "
+            + "file-formats marked for manual conversion"
+            + (":" if manual_conversion_files else ".")
+        )
         if manual_conversion_files:
+            print(f"{'PUID':<16} | {'Count':<10} | Type")
             print(
-                "The following file-formats are marked for manual conversion",
+                "\n".join(f"{p:<16} | {c:<10} {s}" for p, c, s in manual_conversion_files),
+                end="\n\n",
             )
-            for f in manual_conversion_files:
-                print(f)
+
+        print(
+            f"There {'were' if len(convert_unarchiver_files) != 1 else 'was'} {len(convert_unarchiver_files)} "
+            + f"file-formats marked for extraction"
+            + (":" if convert_unarchiver_files else ".")
+        )
+        if convert_unarchiver_files:
+            print(f"{'PUID':<16} | {'Count':<10} | Type")
+            print(
+                "\n".join(f"{p:<16} | {c:<10} | {s}" for p, c, s in convert_unarchiver_files),
+                end="\n\n",
+            )
+
+        print(
+            f"There {'were' if len(convert_symphovert_files) != 1 else 'was'} {len(convert_symphovert_files)} "
+            + "file-formats marked for conversion with Symphony"
+            + (":" if convert_symphovert_files else ".")
+        )
+        if convert_symphovert_files:
+            print(f"{'PUID':<16} | {'Count':<10} | Type")
+            print(
+                "\n".join(f"{p:<16} | {c:<10} | {s}" for p, c, s in convert_symphovert_files),
+                end="\n\n",
+            )
+
+        print(f"There {'were' if ignored_files != 1 else 'was'} {ignored_files} ignored files.")
+        print(
+            f"There {'were' if unidentified_files != 1 else 'was'} {unidentified_files} unidentified files."
+        )
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
