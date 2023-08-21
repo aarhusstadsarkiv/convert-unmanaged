@@ -110,8 +110,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
 
         print(
             f"There {'were' if len(unhandled_files) != 1 else 'was'} {len(unhandled_files)} "
-            + "unhandled file-formats"
-            + (":" if unhandled_files else "."),
+            "unhandled file-formats" + (":" if unhandled_files else "."),
         )
         if unhandled_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
@@ -120,7 +119,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         if unhandled_files and examples > 0:
             for puid, *_ in unhandled_files:
                 files: list[tuple[str, str]] = con.execute(
-                    "SELECT uuid, relative_path FROM Files WHERE puid = ? ORDER BY random() LIMIT ?",
+                    "SELECT uuid, relative_path FROM Files WHERE puid = ? "
+                    "ORDER BY random() LIMIT ?",
                     [puid, examples],
                 ).fetchall()
 
@@ -134,9 +134,9 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
                     )
 
         print(
-            f"There {'were' if len(manual_conversion_files) != 1 else 'was'} {len(manual_conversion_files)} "
-            + "file-formats marked for manual conversion"
-            + (":" if manual_conversion_files else "."),
+            f"There {'were' if len(manual_conversion_files) != 1 else 'was'} "
+            f"{len(manual_conversion_files)} "
+            "file-formats marked for manual conversion" + (":" if manual_conversion_files else "."),
         )
         if manual_conversion_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
@@ -146,9 +146,9 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             )
 
         print(
-            f"There {'were' if len(convert_unarchiver_files) != 1 else 'was'} {len(convert_unarchiver_files)} "
-            + "file-formats marked for extraction"
-            + (":" if convert_unarchiver_files else "."),
+            f"There {'were' if len(convert_unarchiver_files) != 1 else 'was'} "
+            f"{len(convert_unarchiver_files)} "
+            "file-formats marked for extraction" + (":" if convert_unarchiver_files else "."),
         )
         if convert_unarchiver_files:
             print(f"{'PUID':<16} | {'Count':<10} | Type")
@@ -158,8 +158,9 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             )
 
         print(
-            f"There {'were' if len(convert_symphovert_files) != 1 else 'was'} {len(convert_symphovert_files)} "
-            + "file-formats marked for conversion with Symphony"
+            f"There {'were' if len(convert_symphovert_files) != 1 else 'was'} "
+            f"{len(convert_symphovert_files)} "
+            "file-formats marked for conversion with Symphony"
             + (":" if convert_symphovert_files else "."),
         )
         if convert_symphovert_files:
@@ -171,7 +172,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
 
         print(f"There {'were' if ignored_files != 1 else 'was'} {ignored_files} ignored files.")
         print(
-            f"There {'were' if unidentified_files != 1 else 'was'} {unidentified_files} unidentified files.",
+            f"There {'were' if unidentified_files != 1 else 'was'} "
+            f"{unidentified_files} unidentified files.",
         )
 
 
