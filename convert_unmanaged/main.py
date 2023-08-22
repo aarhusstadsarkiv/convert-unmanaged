@@ -143,7 +143,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
                         output_dir / f"{uuid}{Path(relative_path).suffix}",
                     )
 
-            print("Done")
+            print("Done", end="\n\n")
 
         print(
             f"There {'were' if len(manual_conversion_files) != 1 else 'was'} "
