@@ -9,7 +9,7 @@ homepage = "https://www.aarhusstadsarkiv.dk/"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-acacore = {"git" = "https://github.com/aarhusstadsarkiv/acacore.git"}
+acacore = {"git" = "https://github.com/aarhusstadsarkiv/acacore.git", tag = "v0.1.0"}
 
 [tool.poetry.scripts]
 convert-unmanaged = "convert_unmanaged.main:main"
