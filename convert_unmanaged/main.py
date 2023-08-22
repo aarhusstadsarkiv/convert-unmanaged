@@ -75,6 +75,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     # Fileformats that we ignore
     ignored_formats: dict = loads(response_ignore.read())
 
+    total_files: int = 0
     handled_files: int = 0
     unidentified_files: int = 0
     ignored_files: int = 0
@@ -92,6 +93,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     except DatabaseError as e:
         sys.exit(f"Error when connection to database: {e}")
     else:
+        total_files = len(db.files)
+
         for puid, sig, count in db.signature_count.select().fetchalltuples():
             if puid is None:
                 unidentified_files += count
@@ -107,6 +110,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
                 convert_symphovert_files.append((puid, count, sig))
             else:
                 unhandled_files.append((puid, count, sig))
+
+        print(f"There {'were' if total_files != 1 else 'was'} {total_files} total files.")
 
         print(
             f"There {'were' if len(unhandled_files) != 1 else 'was'} {len(unhandled_files)} "
