@@ -36,6 +36,9 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         examples (int): How many examples to extract unhandled files
         examples_dir (Path): Output directory for examples
     """
+    response_version = urlopen(
+        "https://api.github.com/repos/aarhusstadsarkiv/reference-files/commits/main"  # noqa
+    )
     response_convert = urlopen(
         "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"  # noqa
     )
@@ -59,6 +62,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     )
 
     # Accumulate fileformats that we can handle
+    version: str = loads(response_version.read())["sha"]
     handled_formats: dict = loads(response_convert.read())
     convert_unarchiver_dict: dict = loads(response_convert_unarchiver.read())
     handled_formats.update(convert_unarchiver_dict)
@@ -91,6 +95,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     except sqlite3.DatabaseError as e:
         sys.exit(f"Error when connection to database: {e}")
     else:
+        print(f"Using references version {version}.", end="\n\n")
+
         query: str = "SELECT puid, signature, count FROM _SignatureCount ORDER BY count DESC"
         for puid, sig, count in con.execute(query):
             if puid is None:
