@@ -8,7 +8,7 @@ from sqlite3 import DatabaseError
 from typing import Optional, Union
 from urllib.request import urlopen
 
-from acacore.database import Column, FileDB  # type: ignore
+from acacore.database import FileDB  # type: ignore
 from acacore.models.file import File
 
 
