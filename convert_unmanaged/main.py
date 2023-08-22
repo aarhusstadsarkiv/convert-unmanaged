@@ -9,6 +9,7 @@ from typing import Optional, Union
 from urllib.request import urlopen
 
 from acacore.database import Column, FileDB  # type: ignore
+from acacore.models.file import File
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
@@ -95,21 +96,21 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     else:
         total_files = len(db.files)
 
-        for puid, sig, count in db.signature_count.select().fetchalltuples():
-            if puid is None:
-                unidentified_files += count
-            elif puid in handled_formats:
-                handled_files += count
-            elif puid in ignored_formats:
-                ignored_files += count
-            elif puid in manual_conversion_dict:
-                manual_conversion_files.append((puid, count, sig))
-            elif puid in convert_unarchiver_dict:
-                convert_unarchiver_files.append((puid, count, sig))
-            elif puid in convert_symphovert_dict:
-                convert_symphovert_files.append((puid, count, sig))
+        for sc in db.signature_count.select().fetchall():
+            if sc.puid is None:
+                unidentified_files += sc.count
+            elif sc.puid in handled_formats:
+                handled_files += sc.count
+            elif sc.puid in ignored_formats:
+                ignored_files += sc.count
+            elif sc.puid in manual_conversion_dict:
+                manual_conversion_files.append((sc.puid, sc.count, sc.signature))
+            elif sc.puid in convert_unarchiver_dict:
+                convert_unarchiver_files.append((sc.puid, sc.count, sc.signature))
+            elif sc.puid in convert_symphovert_dict:
+                convert_symphovert_files.append((sc.puid, sc.count, sc.signature))
             else:
-                unhandled_files.append((puid, count, sig))
+                unhandled_files.append((sc.puid, sc.count, sc.signature))
 
         print(f"There {'were' if total_files != 1 else 'was'} {total_files} total files.")
 
@@ -129,23 +130,22 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             )
 
             for puid, *_ in unhandled_files:
-                files: list[tuple[str, str]] = list(
+                files: list[File] = list(
                     db.files.select(
-                        [Column("uuid", "", str, str), Column("relative_path", "", str, Path)],
                         where="puid = ?",
                         order_by=[("random()", "asc")],
                         limit=examples,
                         parameters=[puid],
-                    ).fetchalltuples(),
+                    ).fetchall(),
                 )
 
                 output_dir = examples_dir.joinpath(puid.replace("/", "_"))
                 output_dir.mkdir(parents=True, exist_ok=True)
 
-                for uuid, relative_path in files:
+                for f in files:
                     copy(
-                        file.parent.parent / relative_path,
-                        output_dir / f"{uuid}{Path(relative_path).suffix}",
+                        file.parent.parent / f.relative_path,
+                        output_dir / f"{f.uuid}{f.relative_path.suffix}",
                     )
 
             print("Done", end="\n\n")
