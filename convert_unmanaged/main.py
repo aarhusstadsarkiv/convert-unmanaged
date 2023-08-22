@@ -1,13 +1,15 @@
 import argparse
-import sqlite3
 import sys
 from collections.abc import Callable, Sequence
 from json import loads
 from pathlib import Path
 from shutil import copy
-from sqlite3.dbapi2 import Connection
+from sqlite3 import DatabaseError
 from typing import Optional, Union
 from urllib.request import urlopen
+
+from acacore.database import FileDB  # type: ignore
+from acacore.models.file import File  # type: ignore
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
@@ -85,6 +87,7 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     # Fileformats that we ignore
     ignored_formats: dict = loads(response_ignore.read())
 
+    total_files: int = 0
     handled_files: int = 0
     unidentified_files: int = 0
     ignored_files: int = 0
@@ -96,28 +99,31 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     # Query _Signaturecount-view from files.db. Print puid,
     # signature and count for all puids not handled in the .json-files
     try:
-        con: Connection = sqlite3.connect(f"file:{file}?mode=ro", uri=True)
+        db: FileDB = FileDB(f"file:{file}?mode=ro", uri=True)
         examples_dir = (examples_dir or (file.parent / "examples")).resolve()
         examples_dir.mkdir(parents=True, exist_ok=True)
-    except sqlite3.DatabaseError as e:
+    except DatabaseError as e:
         sys.exit(f"Error when connection to database: {e}")
     else:
-        query: str = "SELECT puid, signature, count FROM _SignatureCount ORDER BY count DESC"
-        for puid, sig, count in con.execute(query):
-            if puid is None:
-                unidentified_files += count
-            elif puid in handled_formats:
-                handled_files += count
-            elif puid in ignored_formats:
-                ignored_files += count
-            elif puid in manual_conversion_dict:
-                manual_conversion_files.append((puid, count, sig))
-            elif puid in convert_unarchiver_dict:
-                convert_unarchiver_files.append((puid, count, sig))
-            elif puid in convert_symphovert_dict:
-                convert_symphovert_files.append((puid, count, sig))
+        total_files = len(db.files)
+
+        for sc in db.signature_count.select().fetchall():
+            if sc.puid is None:
+                unidentified_files += sc.count
+            elif sc.puid in handled_formats:
+                handled_files += sc.count
+            elif sc.puid in ignored_formats:
+                ignored_files += sc.count
+            elif sc.puid in manual_conversion_dict:
+                manual_conversion_files.append((sc.puid, sc.count, sc.signature))
+            elif sc.puid in convert_unarchiver_dict:
+                convert_unarchiver_files.append((sc.puid, sc.count, sc.signature))
+            elif sc.puid in convert_symphovert_dict:
+                convert_symphovert_files.append((sc.puid, sc.count, sc.signature))
             else:
-                unhandled_files.append((puid, count, sig))
+                unhandled_files.append((sc.puid, sc.count, sc.signature))
+
+        print(f"There {'were' if total_files != 1 else 'was'} {total_files} total files.")
 
         print(
             f"There {'were' if len(unhandled_files) != 1 else 'was'} {len(unhandled_files)} "
@@ -128,21 +134,32 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             print("\n".join(f"{p:<16} | {c:<10} | {s}" for p, c, s in unhandled_files), end="\n\n")
 
         if unhandled_files and examples > 0:
+            print(
+                f"Saving examples for {len(unhandled_files)} unhandled file formats... ",
+                end="",
+                flush=True,
+            )
+
             for puid, *_ in unhandled_files:
-                files: list[tuple[str, str]] = con.execute(
-                    "SELECT uuid, relative_path FROM Files WHERE puid = ? "
-                    "ORDER BY random() LIMIT ?",
-                    [puid, examples],
-                ).fetchall()
+                files: list[File] = list(
+                    db.files.select(
+                        where="puid = ?",
+                        order_by=[("random()", "asc")],
+                        limit=examples,
+                        parameters=[puid],
+                    ).fetchall(),
+                )
 
                 output_dir = examples_dir.joinpath(puid.replace("/", "_"))
                 output_dir.mkdir(parents=True, exist_ok=True)
 
-                for uuid, relative_path in files:
+                for f in files:
                     copy(
-                        file.parent.parent / relative_path,
-                        output_dir / f"{uuid}{Path(relative_path).suffix}",
+                        file.parent.parent / f.relative_path,
+                        output_dir / f"{f.uuid}{f.relative_path.suffix}",
                     )
+
+            print("Done", end="\n\n")
 
         print(
             f"There {'were' if len(manual_conversion_files) != 1 else 'was'} "
@@ -186,6 +203,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             f"There {'were' if unidentified_files != 1 else 'was'} "
             f"{unidentified_files} unidentified files.",
         )
+
+        print(f"There {'were' if handled_files != 1 else 'was'} {handled_files} handled files.")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
