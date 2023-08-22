@@ -188,6 +188,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             f"{unidentified_files} unidentified files.",
         )
 
+        print(f"There {'were' if handled_files != 1 else 'was'} {handled_files} handled files.")
+
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser()
