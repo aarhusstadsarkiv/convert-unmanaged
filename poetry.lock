@@ -17,7 +17,7 @@ tqdm = "^4.66.1"
 type = "git"
 url = "https://github.com/aarhusstadsarkiv/acacore.git"
 reference = "HEAD"
-resolved_reference = "f85b1e57250413b474423c9c2f3fc1d041477cea"
+resolved_reference = "d977b671948f892fccd2870d337e280d05e9c921"
 
 [[package]]
 name = "annotated-types"
