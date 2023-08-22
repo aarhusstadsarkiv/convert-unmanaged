@@ -9,7 +9,7 @@ from typing import Optional, Union
 from urllib.request import urlopen
 
 from acacore.database import FileDB  # type: ignore
-from acacore.models.file import File
+from acacore.models.file import File  # type: ignore
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
