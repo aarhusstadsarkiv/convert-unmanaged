@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "convert-unmanaged"
-version = "0.4.1"
+version = "0.4.2"
 description = "Prints status for unhandled fileformats"
 authors = ["Aarhus Stadsarkiv <stadsarkiv@aarhus.dk>"]
 license = "GPL-3.0"
