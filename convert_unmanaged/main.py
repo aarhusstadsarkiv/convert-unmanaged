@@ -1,13 +1,15 @@
 import argparse
-import sqlite3
 import sys
 from collections.abc import Callable, Sequence
 from json import loads
 from pathlib import Path
 from shutil import copy
-from sqlite3.dbapi2 import Connection
+from sqlite3 import DatabaseError
 from typing import Optional, Union
 from urllib.request import urlopen
+
+from acacore.database import FileDB  # type: ignore
+from acacore.models.file import File  # type: ignore
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
@@ -40,40 +42,51 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         "https://api.github.com/repos/aarhusstadsarkiv/reference-files/commits/main"  # noqa
     )
     response_convert = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_convert.json"  # noqa
     )
     response_convert_unarchiver = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_extract.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_extract.json"  # noqa
     )
     response_convert_symphovert = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert_symphovert.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_convert_symphovert.json"  # noqa
     )
     response_reidentify = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_reidentify.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_reidentify.json"  # noqa
     )
     response_ignore = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_ignore.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_ignore.json"  # noqa
     )
     response_custom = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/custom_signatures.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/custom_signatures.json"  # noqa
     )
     response_manual_conversion = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/manual_convert.json",
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/manual_convert.json",
     )
 
     # Accumulate fileformats that we can handle
     version: str = loads(response_version.read())["sha"]
     handled_formats: dict = loads(response_convert.read())
     convert_unarchiver_dict: dict = loads(response_convert_unarchiver.read())
-    handled_formats.update(convert_unarchiver_dict)
+    handled_formats.update(convert_unarchiver_dict.get("data"))  # type: ignore
     convert_symphovert_dict: dict = loads(response_convert_symphovert.read())
-    handled_formats.update(convert_symphovert_dict)
+    handled_formats.update(convert_symphovert_dict.get("data"))  # type: ignore
     convert_reidentify_dict: dict = loads(response_reidentify.read())
-    handled_formats.update(convert_reidentify_dict)
+    handled_formats.update(convert_reidentify_dict.get("data"))  # type: ignore
     custom_formats_dict: dict = loads(response_custom.read())
-    handled_formats.update({v["puid"]: v for v in custom_formats_dict})
+    handled_formats.update({v["puid"]: v for v in custom_formats_dict.get("data")})  # type: ignore
     manual_conversion_dict: dict = loads(response_manual_conversion.read())
-    handled_formats.update(manual_conversion_dict)
+    handled_formats.update(manual_conversion_dict.get("data"))  # type: ignore
+
+    versions: dict = {
+        "to_convert": handled_formats.get("version"),
+        "to_extract": convert_unarchiver_dict.get("version"),
+        "to_convert_symphovert": convert_symphovert_dict.get("version"),
+        "to_reidentify": convert_reidentify_dict.get("version"),
+        "custom_signatures": custom_formats_dict.get("version"),
+        "manual_convert": manual_conversion_dict.get("version"),
+    }
+
+    print(f"Running convert unmanaged with the following version of ref. files: {versions}")
 
     # Fileformats that we ignore
     ignored_formats: dict = loads(response_ignore.read())
@@ -89,30 +102,33 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     # Query _Signaturecount-view from files.db. Print puid,
     # signature and count for all puids not handled in the .json-files
     try:
-        con: Connection = sqlite3.connect(f"file:{file}?mode=ro", uri=True)
+        db: FileDB = FileDB(f"file:{file}?mode=ro", uri=True)
         examples_dir = (examples_dir or (file.parent / "examples")).resolve()
         examples_dir.mkdir(parents=True, exist_ok=True)
-    except sqlite3.DatabaseError as e:
+    except DatabaseError as e:
         sys.exit(f"Error when connection to database: {e}")
     else:
         print(f"Using references version {version}.", end="\n\n")
 
-        query: str = "SELECT puid, signature, count FROM _SignatureCount ORDER BY count DESC"
-        for puid, sig, count in con.execute(query):
-            if puid is None:
-                unidentified_files += count
-            elif puid in handled_formats:
-                handled_files += count
-            elif puid in ignored_formats:
-                ignored_files += count
-            elif puid in manual_conversion_dict:
-                manual_conversion_files.append((puid, count, sig))
-            elif puid in convert_unarchiver_dict:
-                convert_unarchiver_files.append((puid, count, sig))
-            elif puid in convert_symphovert_dict:
-                convert_symphovert_files.append((puid, count, sig))
+        total_files = len(db.files)
+
+        for sc in db.signature_count.select().fetchall():
+            if sc.puid is None:
+                unidentified_files += sc.count
+            elif sc.puid in handled_formats:
+                handled_files += sc.count
+            elif sc.puid in ignored_formats:
+                ignored_files += sc.count
+            elif sc.puid in manual_conversion_dict:
+                manual_conversion_files.append((sc.puid, sc.count, sc.signature))
+            elif sc.puid in convert_unarchiver_dict:
+                convert_unarchiver_files.append((sc.puid, sc.count, sc.signature))
+            elif sc.puid in convert_symphovert_dict:
+                convert_symphovert_files.append((sc.puid, sc.count, sc.signature))
             else:
-                unhandled_files.append((puid, count, sig))
+                unhandled_files.append((sc.puid, sc.count, sc.signature))
+
+        print(f"There {'were' if total_files != 1 else 'was'} {total_files} total files.")
 
         print(
             f"There {'were' if len(unhandled_files) != 1 else 'was'} {len(unhandled_files)} "
@@ -123,21 +139,32 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             print("\n".join(f"{p:<16} | {c:<10} | {s}" for p, c, s in unhandled_files), end="\n\n")
 
         if unhandled_files and examples > 0:
+            print(
+                f"Saving examples for {len(unhandled_files)} unhandled file formats... ",
+                end="",
+                flush=True,
+            )
+
             for puid, *_ in unhandled_files:
-                files: list[tuple[str, str]] = con.execute(
-                    "SELECT uuid, relative_path FROM Files WHERE puid = ? "
-                    "ORDER BY random() LIMIT ?",
-                    [puid, examples],
-                ).fetchall()
+                files: list[File] = list(
+                    db.files.select(
+                        where="puid = ?",
+                        order_by=[("random()", "asc")],
+                        limit=examples,
+                        parameters=[puid],
+                    ).fetchall(),
+                )
 
                 output_dir = examples_dir.joinpath(puid.replace("/", "_"))
                 output_dir.mkdir(parents=True, exist_ok=True)
 
-                for uuid, relative_path in files:
+                for f in files:
                     copy(
-                        file.parent.parent / relative_path,
-                        output_dir / f"{uuid}{Path(relative_path).suffix}",
+                        file.parent.parent / f.relative_path,
+                        output_dir / f"{f.uuid}{f.relative_path.suffix}",
                     )
+
+            print("Done", end="\n\n")
 
         print(
             f"There {'were' if len(manual_conversion_files) != 1 else 'was'} "
@@ -181,6 +208,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             f"There {'were' if unidentified_files != 1 else 'was'} "
             f"{unidentified_files} unidentified files.",
         )
+
+        print(f"There {'were' if handled_files != 1 else 'was'} {handled_files} handled files.")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
