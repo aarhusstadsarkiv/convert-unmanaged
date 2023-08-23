@@ -38,56 +38,48 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
         examples (int): How many examples to extract unhandled files
         examples_dir (Path): Output directory for examples
     """
+    response_version = urlopen(
+        "https://api.github.com/repos/aarhusstadsarkiv/reference-files/commits/main"  # noqa
+    )
     response_convert = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_convert.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert.json"  # noqa
     )
     response_convert_unarchiver = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_extract.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_extract.json"  # noqa
     )
     response_convert_symphovert = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_convert_symphovert.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_convert_symphovert.json"  # noqa
     )
     response_reidentify = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_reidentify.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_reidentify.json"  # noqa
     )
     response_ignore = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/to_ignore.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/to_ignore.json"  # noqa
     )
     response_custom = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/custom_signatures.json"  # noqa
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/custom_signatures.json"  # noqa
     )
     response_manual_conversion = urlopen(
-        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/add-version-to-files/manual_convert.json",
+        "https://raw.githubusercontent.com/aarhusstadsarkiv/reference-files/main/manual_convert.json",
     )
 
     # Accumulate fileformats that we can handle
+    version: str = loads(response_version.read())["sha"]
     handled_formats: dict = loads(response_convert.read())
     convert_unarchiver_dict: dict = loads(response_convert_unarchiver.read())
-    handled_formats.update(convert_unarchiver_dict.get("data"))  # type: ignore
+    handled_formats.update(convert_unarchiver_dict)
     convert_symphovert_dict: dict = loads(response_convert_symphovert.read())
-    handled_formats.update(convert_symphovert_dict.get("data"))  # type: ignore
+    handled_formats.update(convert_symphovert_dict)
     convert_reidentify_dict: dict = loads(response_reidentify.read())
-    handled_formats.update(convert_reidentify_dict.get("data"))  # type: ignore
+    handled_formats.update(convert_reidentify_dict)
     custom_formats_dict: dict = loads(response_custom.read())
-    handled_formats.update({v["puid"]: v for v in custom_formats_dict.get("data")})  # type: ignore
+    handled_formats.update({v["puid"]: v for v in custom_formats_dict})
     manual_conversion_dict: dict = loads(response_manual_conversion.read())
-    handled_formats.update(manual_conversion_dict.get("data"))  # type: ignore
-
-    versions: dict = {
-        "to_convert": handled_formats.get("version"),
-        "to_extract": convert_unarchiver_dict.get("version"),
-        "to_convert_symphovert": convert_symphovert_dict.get("version"),
-        "to_reidentify": convert_reidentify_dict.get("version"),
-        "custom_signatures": custom_formats_dict.get("version"),
-        "manual_convert": manual_conversion_dict.get("version"),
-    }
-
-    print(f"Running convert unmanaged with the following version of ref. files: {versions}")
+    handled_formats.update(manual_conversion_dict)
 
     # Fileformats that we ignore
     ignored_formats: dict = loads(response_ignore.read())
 
-    total_files: int = 0
     handled_files: int = 0
     unidentified_files: int = 0
     ignored_files: int = 0
@@ -105,6 +97,8 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
     except DatabaseError as e:
         sys.exit(f"Error when connection to database: {e}")
     else:
+        print(f"Using references version {version}.", end="\n\n")
+
         total_files = len(db.files)
 
         for sc in db.signature_count.select().fetchall():
