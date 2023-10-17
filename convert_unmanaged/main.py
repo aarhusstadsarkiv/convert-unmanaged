@@ -1,15 +1,16 @@
 import argparse
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
+from collections.abc import Sequence
 from json import loads
 from pathlib import Path
 from shutil import copy
 from sqlite3 import DatabaseError
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 from urllib.request import urlopen
 
 from acacore.database import FileDB  # type: ignore
-from acacore.models.file import File  # type: ignore
 
 
 def argtype_examples(minimum: int, maximum: int) -> Callable[[Union[str, int]], int]:
@@ -135,22 +136,21 @@ def missingpuididentifier(file: Path, examples: int, examples_dir: Path) -> None
             )
 
             for puid, *_ in unhandled_files:
-                files: list[File] = list(
-                    db.files.select(
-                        where="puid = ?",
-                        order_by=[("random()", "asc")],
-                        limit=examples,
-                        parameters=[puid],
-                    ).fetchall(),
-                )
+                files: list[tuple[str, str]] = db.execute(
+                    f"select UUID, RELATIVE_PATH "
+                    f"from FILES "
+                    f"where PUID = ? "
+                    f"order by RANDOM() limit {examples}",
+                    [puid],
+                ).fetchall()
 
                 output_dir = examples_dir.joinpath(puid.replace("/", "_"))
                 output_dir.mkdir(parents=True, exist_ok=True)
 
-                for f in files:
+                for uuid, relative_path in files:
                     copy(
-                        file.parent.parent / f.relative_path,
-                        output_dir / f"{f.uuid}{f.relative_path.suffix}",
+                        file.parent.parent / relative_path,
+                        output_dir / f"{uuid}{Path(relative_path).suffix}",
                     )
 
             print("Done", end="\n\n")
